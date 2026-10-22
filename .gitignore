@@ -1,25 +1,47 @@
-# Python
+
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
+*$py.class
+
+# Virtual environments
 .venv/
 venv/
+env/
 
 # Environment variables and secrets
 .env
 .env.*
 !.env.example
 
-# Testing and tools
+# Testing, linting, and coverage
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
 
-# IDE and operating system
+# IDE and operating system files
 .vscode/
+.idea/
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Generated package metadata
-src/*.egg-info/
+*.egg-info/
+
+# Build and distribution artifacts
+build/
+dist/
+
+# Local source data and reproducible intermediate outputs
+data/raw/
+data/processed/
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*~

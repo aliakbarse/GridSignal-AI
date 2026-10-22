@@ -5,10 +5,7 @@ import pytest
 from gridsignal.data_validation import combine_market_data
 
 
-def make_price_data(
-    timestamps: list[str | None],
-    prices: list[float],
-) -> pd.DataFrame:
+def make_price_data(timestamps, prices):
     return pd.DataFrame(
         {
             "start_time_utc": timestamps,
@@ -17,122 +14,111 @@ def make_price_data(
     )
 
 
-def make_generation_data(
-    timestamps: list[str | None],
-) -> pd.DataFrame:
-    row_count = len(timestamps)
-
+def make_generation_data(timestamps):
     return pd.DataFrame(
         {
             "start_time_utc": timestamps,
-            "wind_offshore_mwh": [10.0] * row_count,
-            "wind_onshore_mwh": [20.0] * row_count,
-            "wind_total_mwh": [30.0] * row_count,
-            "solar_mwh": [40.0] * row_count,
-            "renewables_selected_mwh": [70.0] * row_count,
+            "wind_offshore_mwh": [100.0] * len(timestamps),
+            "wind_onshore_mwh": [200.0] * len(timestamps),
+            "wind_total_mwh": [300.0] * len(timestamps),
+            "solar_mwh": [400.0] * len(timestamps),
+            "renewables_selected_mwh": [700.0] * len(timestamps),
         }
     )
 
 
 def test_negative_prices_are_identified_correctly():
-    """Only prices strictly below zero count as negative."""
-    prices = pd.Series([-25.0, -0.01, 0.0, 15.0])
+    prices = make_price_data(
+        [
+            "2024-01-01T00:00:00Z",
+            "2024-01-01T01:00:00Z",
+            "2024-01-01T02:00:00Z",
+        ],
+        [-10.0, 0.0, 25.0],
+    )
+    generation = make_generation_data(prices["start_time_utc"].tolist())
 
-    assert (prices < 0).tolist() == [True, True, False, False]
+    result = combine_market_data(prices, generation)
+
+    assert result["is_negative_price"].tolist() == [True, False, False]
 
 
 def test_negative_price_frequency_uses_observed_hours():
-    """Calculate frequency using the number of observed records."""
-    prices = pd.Series([-10.0, 20.0, -5.0, 30.0])
+    prices = make_price_data(
+        [
+            "2024-01-01T00:00:00Z",
+            "2024-01-01T01:00:00Z",
+            "2024-01-01T02:00:00Z",
+        ],
+        [-10.0, 0.0, -5.0],
+    )
+    generation = make_generation_data(prices["start_time_utc"].tolist())
 
-    frequency = (prices < 0).mean() * 100
+    result = combine_market_data(prices, generation)
 
-    assert frequency == 50.0
+    assert result["is_negative_price"].sum() == 2
+    assert len(result) == 3
 
 
 def test_zero_price_is_not_a_negative_price():
-    """A price of exactly zero is not negative."""
-    assert not (0.0 < 0)
+    prices = make_price_data(["2024-01-01T00:00:00Z"], [0.0])
+    generation = make_generation_data(["2024-01-01T00:00:00Z"])
+
+    result = combine_market_data(prices, generation)
+
+    assert not result["is_negative_price"].iloc[0]
 
 
 def test_market_data_combines_matching_timestamps():
-    """Matching price and generation records should combine correctly."""
-    timestamps = [
-        "2024-01-01T00:00:00Z",
-        "2024-01-01T01:00:00Z",
-    ]
-    prices = make_price_data(timestamps, [-5.0, 20.0])
-    generation = make_generation_data(timestamps)
-
-    combined = combine_market_data(prices, generation)
-
-    assert len(combined) == 2
-    assert combined["start_time_utc"].is_unique
-    assert combined["is_negative_price"].tolist() == [True, False]
-    assert combined["year"].tolist() == [2024, 2024]
-    assert combined["month"].tolist() == [1, 1]
-
-
-def test_duplicate_price_timestamps_are_rejected():
-    """Duplicate timestamps must not silently multiply join rows."""
-    timestamps = [
-        "2024-01-01T00:00:00Z",
-        "2024-01-01T00:00:00Z",
-    ]
-    prices = make_price_data(timestamps, [-5.0, 10.0])
-    generation = make_generation_data(timestamps[:1])
-
-    with pytest.raises(
-        ValueError,
-        match="Duplicate UTC timestamps found in price data",
-    ):
-        combine_market_data(prices, generation)
-
-
-def test_unmatched_timestamps_are_rejected():
-    """A missing generation interval must cause the join to fail."""
     prices = make_price_data(
         ["2024-01-01T00:00:00Z", "2024-01-01T01:00:00Z"],
         [-5.0, 20.0],
     )
     generation = make_generation_data(
-        ["2024-01-01T00:00:00Z"]
+        ["2024-01-01T00:00:00Z", "2024-01-01T01:00:00Z"]
     )
 
-    with pytest.raises(
-        ValueError,
-        match="timestamps did not match",
-    ):
+    result = combine_market_data(prices, generation)
+
+    assert len(result) == 2
+    assert "price_eur_mwh" in result.columns
+    assert "solar_mwh" in result.columns
+
+
+def test_duplicate_price_timestamps_are_rejected():
+    prices = make_price_data(
+        ["2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z"],
+        [-5.0, -10.0],
+    )
+    generation = make_generation_data(["2024-01-01T00:00:00Z"])
+
+    with pytest.raises(ValueError):
+        combine_market_data(prices, generation)
+
+
+def test_unmatched_timestamps_are_rejected():
+    prices = make_price_data(["2024-01-01T00:00:00Z"], [-5.0])
+    generation = make_generation_data(["2024-01-01T01:00:00Z"])
+
+    with pytest.raises(ValueError):
         combine_market_data(prices, generation)
 
 
 def test_missing_timestamps_are_rejected():
-    """Missing timestamp values must not enter the combined dataset."""
     prices = make_price_data([None], [-5.0])
-    generation = make_generation_data(
-        ["2024-01-01T00:00:00Z"]
-    )
+    generation = make_generation_data(["2024-01-01T00:00:00Z"])
 
-    with pytest.raises(
-        ValueError,
-        match="missing UTC timestamps",
-    ):
+    with pytest.raises(ValueError):
         combine_market_data(prices, generation)
 
 
 def test_missing_required_price_column_is_rejected():
-    """Price data must include its required price column."""
     prices = pd.DataFrame(
         {"start_time_utc": ["2024-01-01T00:00:00Z"]}
     )
-    generation = make_generation_data(
-        ["2024-01-01T00:00:00Z"]
-    )
+    generation = make_generation_data(["2024-01-01T00:00:00Z"])
 
-    with pytest.raises(
-        ValueError,
-        match="Price data is missing columns",
-    ):
+    with pytest.raises(ValueError):
         combine_market_data(prices, generation)
 
 

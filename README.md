@@ -1,41 +1,56 @@
 # GridSignal AI
 
-**An evidence-grounded intelligence assistant for the German electricity market.**
+**German Electricity Market Analytics | Python · pandas · Data Validation · Data Visualization**
 
-GridSignal AI is a portfolio project exploring how electricity-market analytics, forecasting, and retrieval-augmented generation (RAG) can work together to explain market conditions using quantitative data and traceable evidence.
+GridSignal AI is a data analytics project investigating negative electricity prices in Germany and their relationship with wind and solar generation. It transforms hourly electricity-market data into validated datasets, quantitative findings, and visualizations to help explain market patterns.
 
-The current implementation is a reproducible Python analytics pipeline examining German day-ahead electricity prices and selected renewable-generation data for 2024–2025. Future development will introduce forecasting, evidence retrieval, and AI-assisted explanations.
+The current implementation is a reproducible Python analytics pipeline analyzing German day-ahead electricity prices and selected renewable-generation data for 2024–2025. The longer-term vision is to extend this analytical foundation with forecasting, evidence retrieval, and AI-assisted market explanations.
 
-## Research Question
+## Project at a Glance
 
-How did negative electricity prices vary across months and hours in 2024 and 2025, and how did wind and solar generation differ between negative-price and nonnegative-price hours?
+| Category | Details |
+|---|---|
+| Market | Germany's day-ahead electricity market |
+| Analysis period | 2024–2025 |
+| Data source | [SMARD](https://www.smard.de/en) |
+| Core technologies | Python, pandas, matplotlib, pytest |
+| Analytical focus | Negative prices, renewable generation, seasonality, hourly patterns |
+| Current status | Data processing, analysis, validation, and visualizations implemented |
+| Future direction | Forecasting, evidence retrieval, and AI-assisted explanations |
 
-## Key Findings
+## Key Results
 
-### 1. Negative prices became more frequent in May and June 2025
+### 1. Negative-price hours increased by 25.4%
 
-| Month | Negative-price hours in 2024 | Frequency in 2024 | Negative-price hours in 2025 | Frequency in 2025 |
+The dataset contains 457 negative-price hours in 2024 and 573 in 2025, an increase of 116 hours.
+
+June showed a particularly pronounced change:
+
+| Metric | June 2024 | June 2025 |
+|---|---:|---:|
+| Negative-price hours | 64 | 141 |
+| Share of observed hours | 8.89% | 19.58% |
+
+June 2025 had the highest observed monthly negative-price frequency in the dataset. The frequency subsequently fell to 1.61% in July 2025, highlighting substantial month-to-month variation.
+
+These patterns identify periods worth investigating, but the analysis does not independently explain the underlying market conditions.
+
+### 2. Solar generation was substantially higher during negative-price hours
+
+Average solar generation was higher during negative-price hours in both years.
+
+| Year | Negative-price hours | Average solar generation | Nonnegative-price hours | Average solar generation |
 |---|---:|---:|---:|---:|
-| May | 78 | 10.48% | 129 | 17.34% |
-| June | 64 | 8.89% | 141 | 19.58% |
+| 2024 | 457 | 25,540 MWh | 8,327 | 6,217 MWh |
+| 2025 | 573 | 31,266 MWh | 8,184 | 6,880 MWh |
 
-June 2025 recorded the highest observed monthly negative-price frequency in the dataset: **19.58% of observed hours**, compared with 8.89% in June 2024.
+In 2025, average solar generation during negative-price hours was approximately 4.5 times the average during nonnegative-price hours.
 
-Negative-price frequency subsequently fell to 1.61% in July 2025. These changes identify periods worth investigating, but do not independently explain the underlying market conditions.
+These values are averages per observed hourly interval, not total generation. The relationship is descriptive and does not establish causation. Demand, conventional generation, cross-border flows, storage, and other market conditions may also influence electricity prices.
 
-### 2. Solar generation was higher during negative-price hours
+### 3. Most negative-price hours remained in the mildest negative range
 
-In May 2025, average solar generation was approximately 34,775 MWh during negative-price hours, compared with 9,415 MWh during nonnegative-price hours.
-
-In June 2025, the corresponding averages were approximately 35,296 MWh and 9,713 MWh.
-
-These figures represent average generation per observed hourly interval, not monthly generation totals. The association does not establish causation: demand, conventional generation, cross-border electricity flows, storage, and other market conditions may also influence prices.
-
-### 3. Most negative-price hours occurred in the mildest negative-price range
-
-The dataset contained 457 negative-price hours in 2024 and 573 in 2025, an increase of approximately 25.4%.
-
-| Negative-price range | 2024 hours | Share of 2024 negative hours | 2025 hours | Share of 2025 negative hours |
+| Negative-price range | 2024 hours | Share | 2025 hours | Share |
 |---|---:|---:|---:|---:|
 | Below −100 €/MWh | 5 | 1.1% | 13 | 2.3% |
 | −100 to −50 €/MWh | 22 | 4.8% | 17 | 3.0% |
@@ -43,50 +58,59 @@ The dataset contained 457 negative-price hours in 2024 and 573 in 2025, an incre
 | −20 to −10 €/MWh | 49 | 10.7% | 51 | 8.9% |
 | −10 to 0 €/MWh | 320 | 70.0% | 438 | 76.4% |
 
-Although negative-price hours increased, most remained between −10 and 0 €/MWh. The annual minimum reached −250.32 €/MWh in 2025, compared with −135.45 €/MWh in 2024.
+Although negative-price hours became more frequent, most remained between −10 and 0 €/MWh.
 
-This distinction shows why the frequency of negative prices and their severity should be analyzed separately.
+The annual minimum price reached −135.45 €/MWh in 2024 and −250.32 €/MWh in 2025. This illustrates why the frequency of negative prices and their severity should be analyzed separately.
 
-### 4. Higher solar generation during negative-price hours was consistent across selected months
+### 4. The solar-generation relationship was consistent across selected months
 
 Across the 13 year-month combinations with at least 30 negative-price hours, average solar generation was higher during negative-price hours in all 13 cases.
 
-The mean difference was approximately 20,334 MWh per observed hourly interval, and the median difference was approximately 19,168 MWh.
+- Mean difference: approximately 20,334 MWh per observed hourly interval.
+- Median difference: approximately 19,168 MWh per observed hourly interval.
+- Consistency: 13 out of 13 selected year-month combinations.
 
-This consistency strengthens the descriptive finding within the selected observations. However, the threshold is a practical inclusion rule, not a statistical significance test. The result does not prove that solar generation caused negative prices.
+The 30-hour threshold is a practical inclusion rule, not a statistical significance test. These results support a consistent descriptive pattern within the selected observations but do not prove that solar generation caused negative prices.
 
 ### 5. Negative-price frequency peaked around midday
 
-The hour of day with the highest negative-price frequency differed slightly between years:
+The hour with the highest negative-price frequency differed between years:
 
-- **2024:** 14:00 local time, with 75 negative-price hours out of 366 observed hours (20.49%).
-- **2025:** 13:00 local time, with 99 negative-price hours out of 365 observed hours (27.12%).
+- **2024:** 14:00 German local time — 75 negative-price hours out of 366 observed hours, or 20.49%.
+- **2025:** 13:00 German local time — 99 negative-price hours out of 365 observed hours, or 27.12%.
 
-The peak frequency was approximately 6.63 percentage points higher in 2025. The midday concentration identifies a useful pattern for further investigation, but does not establish why prices became negative.
+The peak frequency was approximately 6.63 percentage points higher in 2025.
 
-### 6. The hourly comparison also showed higher solar generation during negative-price hours
+The midday concentration is a useful pattern for further investigation, particularly alongside solar-generation data. It does not establish the cause of negative prices.
 
-The hourly analysis compared average solar generation during negative-price and nonnegative-price hours for each local hour of the day.
+### 6. The hourly comparison showed higher solar generation during negative-price hours
 
-For example, at 11:00 in 2025, average solar generation was approximately 35,216 MWh during negative-price hours, compared with 22,946 MWh during nonnegative-price hours — a difference of approximately 12,270 MWh, or 53%.
+At 11:00 German local time in 2025, average solar generation was approximately:
 
-Some overnight comparisons contain relatively few negative-price observations. Those results should be interpreted cautiously, particularly where fewer than 30 negative-price observations are available.
+- 35,216 MWh during negative-price hours.
+- 22,946 MWh during nonnegative-price hours.
+
+The difference was approximately 12,270 MWh, or 53%.
+
+Some overnight hour-of-day comparisons contain relatively few negative-price observations. Those comparisons should be interpreted cautiously, especially where fewer than 30 negative-price observations are available.
 
 ## Visualizations
+
+The following charts summarize the main analytical findings.
 
 ### Monthly negative-price frequency
 
 ![Monthly frequency of negative electricity prices in Germany, 2024–2025](docs/negative_price_frequency_2024_2025.png)
 
-Monthly share of observed hourly intervals with day-ahead prices below 0 €/MWh.
+Compares the share of observed hourly intervals with day-ahead prices below 0 €/MWh for each month in 2024 and 2025.
 
 ### Negative-price severity
 
 ![Severity distribution of negative electricity prices in Germany, 2024–2025](docs/negative_price_severity_2024_2025.png)
 
-Annual distribution of negative-price hours across five price-severity ranges.
+Compares the annual distribution of negative-price hours across five price-severity ranges.
 
-### Monthly solar comparison
+### Monthly solar-generation comparison
 
 ![Monthly average solar generation during negative-price and nonnegative-price hours](docs/monthly_solar_comparison_2024_2025.png)
 
@@ -96,9 +120,22 @@ Compares average solar generation across months and price categories. Values rep
 
 ![Hourly negative-price frequency and solar generation by price category, 2024–2025](docs/hour_of_day_analysis_2024_2025.png)
 
-Shows negative-price frequency by local hour and compares average solar generation between negative-price and nonnegative-price hours.
+Shows negative-price frequency by German local hour and compares average solar generation during negative-price and nonnegative-price hours.
 
-The written analysis and additional supporting tables are available in [`docs/findings.md`](docs/findings.md).
+For additional results, supporting tables, and analytical interpretation, see [the detailed findings](docs/findings.md).
+
+## Why These Findings Matter
+
+Negative electricity prices are relevant to the analysis of electricity-market conditions, renewable generation, and price variability.
+
+The observed patterns suggest several useful directions for further investigation:
+
+- **Market monitoring:** Identify months and hours with elevated negative-price frequency.
+- **Renewable-generation analysis:** Examine how wind and solar output coincide with different price conditions.
+- **Forecasting:** Investigate whether time, seasonality, and renewable-generation features improve baseline price forecasts.
+- **Evidence-grounded explanations:** Connect quantitative results to official market reports and regulatory documents.
+
+These are potential applications of the findings, not demonstrated operational outcomes. The current implementation is descriptive and does not yet provide price forecasts or an AI-generated market-intelligence service.
 
 ## Data Sources
 
@@ -106,50 +143,67 @@ The written analysis and additional supporting tables are available in [`docs/fi
 
 The project uses hourly data for the Germany/Luxembourg bidding zone:
 
-- Day-ahead electricity prices (€/MWh)
-- Actual offshore wind generation
-- Actual onshore wind generation
-- Actual solar generation
+- Day-ahead electricity prices (€/MWh).
+- Actual offshore wind generation.
+- Actual onshore wind generation.
+- Actual solar generation.
 
 The selected generation measures do not represent total electricity supply or every renewable energy source.
 
-### Data quality and limitations
+## Data Quality and Limitations
 
-- The 2024 dataset contains 8,784 hourly records, covering the leap year.
-- The 2025 dataset contains 8,757 hourly records. The final three hours of the year are absent from the downloaded source data.
-- The combined dataset contains 17,541 matched hourly price and generation records.
-- Price and generation records are joined using UTC timestamps.
-- German local time (`Europe/Berlin`) is used for calendar-year, monthly, seasonal, and hour-of-day analysis.
-- Daylight-saving transitions mean that local months and individual local hours can contain different numbers of observations.
-- Negative-price frequency is calculated using observed hourly records as the denominator.
-- Months with no negative-price hours cannot support comparisons between negative-price and nonnegative-price hours.
-- Some hour-of-day comparisons have relatively few negative-price observations.
-- The analysis is descriptive and does not establish causal relationships or demonstrate statistical significance.
-- Generation values follow the downloaded source data. Source definitions, units, and any estimates should be verified before publication or commercial interpretation.
+Data validation is an important part of this project because timestamp errors, incomplete observations, and incorrect joins can distort market analysis.
 
-These limitations matter when comparing periods, interpreting averages, and drawing conclusions about market behavior.
+The current dataset has the following characteristics:
+
+- **2024:** 8,784 hourly records, covering the leap year.
+- **2025:** 8,757 hourly records; the final three hours of the year are absent from the downloaded source data.
+- **Combined dataset:** 17,541 matched hourly price and generation records.
+- **Timestamp matching:** Price and generation records are joined using UTC timestamps.
+- **Local-time analysis:** `Europe/Berlin` is used for calendar-year, monthly, seasonal, and hour-of-day analysis.
+- **Daylight saving:** Local months and individual local hours can contain different numbers of observations.
+- **Negative-price frequency:** Calculated using observed hourly records as the denominator.
+- **Unavailable comparisons:** Months without negative-price hours cannot support comparisons between negative-price and nonnegative-price hours.
+- **Small sample sizes:** Some hour-of-day comparisons contain relatively few negative-price observations.
+- **Causality and significance:** The analysis is descriptive and does not establish causal relationships or demonstrate statistical significance.
+- **Source definitions:** Generation values follow the downloaded source data. Units, definitions, and any estimates should be verified before publication or commercial interpretation.
+
+These limitations matter when comparing periods, interpreting averages, and drawing conclusions about market behavior. In particular, observed associations between renewable generation and negative prices should not be interpreted as proof of causation.
 
 ## Methodology
 
-The current workflow follows these stages:
+The current workflow follows seven stages.
 
 1. **Inspect:** Examine source files, columns, timestamp formats, and data quality.
 2. **Clean:** Parse timestamps and numerical values, handle missing data, and normalize timestamps.
 3. **Validate:** Check required columns, timestamp uniqueness, missing intervals, and matching price and generation records.
 4. **Combine:** Join prices and selected generation measures using UTC timestamps.
-5. **Analyze:** Calculate negative-price frequency, compare generation across price categories, examine severity, and summarize patterns by month, season, and hour of day.
+5. **Analyze:** Calculate negative-price frequency, compare generation across price categories, examine price severity, and summarize patterns by month, season, and hour of day.
 6. **Visualize:** Generate charts that communicate the principal patterns and support further investigation.
 7. **Document:** Record findings, assumptions, limitations, and supporting outputs.
 
-The workflow is generated locally from downloaded source files using Python and pandas.
+The workflow runs locally using downloaded SMARD data and Python.
+
+## Technologies and Skills Demonstrated
+
+| Area | Technologies or techniques |
+|---|---|
+| Programming | Python |
+| Data manipulation | pandas |
+| Data quality | Missing-value checks, timestamp validation, duplicate detection, interval continuity |
+| Data integration | UTC-based timestamp matching and dataset joins |
+| Exploratory analysis | Grouped comparisons, monthly summaries, hourly patterns, price-severity analysis |
+| Data visualization | matplotlib |
+| Testing | pytest |
+| Reproducibility | Modular scripts, documented execution order, generated outputs |
 
 ## Repository Structure
 
 ```text
 GridSignal_AI/
 ├── data/
-│   ├── raw/                       # Original source files (local)
-│   └── processed/                 # Generated datasets (local)
+│   ├── raw/                              # Original source files (local)
+│   └── processed/                        # Generated datasets (local)
 ├── docs/
 │   ├── findings.md
 │   ├── negative_price_frequency_2024_2025.png
@@ -187,15 +241,15 @@ Raw and processed datasets are excluded from version control. The charts, analys
 
 ## Run the Project Locally
 
+The following instructions describe the current Windows PowerShell workflow.
+
 ### Requirements
 
-- Python 3.14 or later, as specified in the current project configuration
-- pip
-- Git
+- Python 3.14 or later, as specified in the current project configuration.
+- pip.
+- Git.
 
-### 1. Obtain the repository
-
-Clone the repository:
+### 1. Clone the repository
 
 ```powershell
 git clone https://github.com/aliakbarse/GridSignal-AI.git
@@ -204,12 +258,12 @@ cd GridSignal-AI
 
 ### 2. Create and activate a virtual environment
 
-On Windows PowerShell:
-
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
+
+If PowerShell prevents activation, consult the Python documentation for your environment's execution-policy settings.
 
 ### 3. Install the project and development dependencies
 
@@ -221,7 +275,15 @@ python -m pip install -e ".[dev]"
 
 ### 4. Download the source data
 
-Download the required hourly day-ahead price and actual-generation CSV files from SMARD. Place them in `data/raw/` using the filenames expected by the scripts.
+Download the required hourly day-ahead price and actual-generation CSV files from [SMARD](https://www.smard.de/en).
+
+Place them in `data/raw/` using the filenames expected by the scripts:
+
+```text
+data/raw/
+├── Day-ahead_prices_202312312100_202512312100_Hour.csv
+└── Actual_generation_202312312100_202512312100_Hour.csv
+```
 
 Check the applicable source terms before redistributing downloaded data.
 
@@ -245,7 +307,7 @@ python -m gridsignal.plot_monthly_solar_comparison
 python -m gridsignal.plot_hour_of_day_analysis
 ```
 
-Run the scripts from the repository root. The pipeline generates processed datasets under `data/processed/`, analytical summaries under `docs/`, and visualizations under `docs/`.
+The scripts generate processed datasets under `data/processed/`, analytical summaries under `docs/`, and visualizations under `docs/`.
 
 ### 6. Run the tests
 
@@ -253,18 +315,20 @@ Run the scripts from the repository root. The pipeline generates processed datas
 python -m pytest -v
 ```
 
-The current test suite contains nine tests covering key rules for negative-price classification, timestamp validation, and matching price and generation records. A passing test suite verifies the tested rules; it does not by itself validate every analytical conclusion.
+The current test suite contains nine tests covering key rules for negative-price classification, timestamp validation, and matching price and generation records.
+
+A passing test suite verifies the tested rules; it does not by itself validate every analytical conclusion.
 
 ## Planned Development
 
-GridSignal AI is being developed incrementally.
+GridSignal AI is being developed incrementally. The following capabilities are planned and are not part of the current implementation.
 
-1. **Market analytics:** Expand the analysis of price patterns, negative-price events, and renewable-generation relationships.
+1. **Expanded market analytics:** Investigate additional price patterns, negative-price events, and renewable-generation relationships.
 2. **Forecasting:** Develop baseline models and evaluate them against appropriate benchmarks.
 3. **Evidence retrieval:** Retrieve relevant evidence from official energy-market and regulatory documents.
 4. **AI orchestration:** Build a multi-step workflow using LangGraph to produce traceable answers.
 5. **Evaluation:** Measure forecast accuracy, retrieval relevance, citation quality, and system performance.
-6. **Application:** Expose the system through an API and introduce observability and further testing.
+6. **Application and observability:** Expose the system through an API and introduce monitoring and further testing.
 
 Potential technologies include pandas, DuckDB, Parquet, scikit-learn, LightGBM, PostgreSQL with pgvector, FastAPI, LangGraph, pytest, and Langfuse. These are planned components, not claims about implemented functionality.
 

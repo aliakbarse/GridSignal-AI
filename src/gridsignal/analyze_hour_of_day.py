@@ -25,6 +25,8 @@ SEASON_MONTHS = {
 
 SEASON_ORDER = ["Winter", "Spring", "Summer", "Autumn"]
 
+PRICE_CATEGORIES = ["Negative price", "Nonnegative price"]
+
 
 def load_data() -> pd.DataFrame:
     """Load the dataset, validate columns, and derive analysis fields."""
@@ -42,8 +44,8 @@ def load_data() -> pd.DataFrame:
             f"Missing required columns: {sorted(missing_columns)}"
         )
 
-    # Parse timestamps with mixed UTC offsets, then convert to German
-    # local time. This correctly handles CET and CEST.
+    # The source timestamps contain timezone offsets.
+    # Parse them and convert them to German local time (CET/CEST).
     data["start_time_local"] = pd.to_datetime(
         data["start_time_local"],
         format="mixed",
@@ -70,12 +72,12 @@ def load_data() -> pd.DataFrame:
 
     dropped_rows = original_rows - len(data)
 
-    # Derive the hour and month using German local time.
-    data["hour"] = data["start_time_local"].dt.hour
+    # Derive calendar fields from German local time.
+    data["year"] = data["start_time_local"].dt.year
     data["month"] = data["start_time_local"].dt.month
+    data["hour"] = data["start_time_local"].dt.hour
 
-    # Negative means strictly below zero. A price of exactly zero
-    # belongs to the nonnegative category.
+    # Negative means strictly below zero. Exactly zero is nonnegative.
     data["is_negative_price"] = data["price_eur_mwh"] < 0
 
     data["price_category"] = data["is_negative_price"].map(
@@ -100,12 +102,7 @@ def load_data() -> pd.DataFrame:
 
 
 def analyze_hourly_frequency(data: pd.DataFrame) -> pd.DataFrame:
-    """
-    Calculate negative-price frequency by local hour and year.
-
-    The rate uses the actual observed records in each hour as its
-    denominator, rather than assuming every hour has equal coverage.
-    """
+    """Calculate negative-price frequency by local hour and year."""
     summary = (
         data.groupby(["year", "hour"], as_index=False)
         .agg(
@@ -120,14 +117,13 @@ def analyze_hourly_frequency(data: pd.DataFrame) -> pd.DataFrame:
         * 100
     )
 
-    return summary.sort_values(["year", "hour"]).reset_index(drop=True)
+    return summary.sort_values(
+        ["year", "hour"]
+    ).reset_index(drop=True)
 
 
 def analyze_solar_by_hour(data: pd.DataFrame) -> pd.DataFrame:
-    """
-    Compare solar generation during negative and nonnegative prices
-    for each local hour and year.
-    """
+    """Compare solar generation by price category, hour, and year."""
     summary = (
         data.groupby(
             ["year", "hour", "price_category"],
@@ -138,6 +134,7 @@ def analyze_solar_by_hour(data: pd.DataFrame) -> pd.DataFrame:
             observed_hours=("solar_mwh", "size"),
             average_solar_mwh=("solar_mwh", "mean"),
             median_solar_mwh=("solar_mwh", "median"),
+            solar_std_mwh=("solar_mwh", "std"),
         )
     )
 
@@ -146,10 +143,93 @@ def analyze_solar_by_hour(data: pd.DataFrame) -> pd.DataFrame:
     ).reset_index(drop=True)
 
 
+def analyze_solar_by_month_hour(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compare solar generation within each year, month, and local hour.
+
+    Retain sample counts, means, and standard deviations for both
+    price categories so that uncertainty can be evaluated later.
+    """
+    grouped = (
+        data.groupby(
+            ["year", "month", "hour", "price_category"],
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            observed_hours=("solar_mwh", "size"),
+            average_solar_mwh=("solar_mwh", "mean"),
+            solar_std_mwh=("solar_mwh", "std"),
+        )
+    )
+
+    time_keys = ["year", "month", "hour"]
+
+    # Average solar generation by price category.
+    averages = grouped.pivot(
+        index=time_keys,
+        columns="price_category",
+        values="average_solar_mwh",
+    ).reindex(columns=PRICE_CATEGORIES)
+
+    # Number of observations in each category.
+    counts = grouped.pivot(
+        index=time_keys,
+        columns="price_category",
+        values="observed_hours",
+    ).reindex(columns=PRICE_CATEGORIES)
+
+    # Sample standard deviation in each category.
+    standard_deviations = grouped.pivot(
+        index=time_keys,
+        columns="price_category",
+        values="solar_std_mwh",
+    ).reindex(columns=PRICE_CATEGORIES)
+
+    averages.columns = [
+        "average_solar_negative_mwh",
+        "average_solar_nonnegative_mwh",
+    ]
+
+    counts.columns = [
+        "negative_price_hours",
+        "nonnegative_price_hours",
+    ]
+
+    standard_deviations.columns = [
+        "solar_std_negative_mwh",
+        "solar_std_nonnegative_mwh",
+    ]
+
+    summary = pd.concat(
+        [averages, counts, standard_deviations],
+        axis=1,
+    ).reset_index()
+
+    # Positive differences indicate higher average solar generation
+    # during negative-price hours within the same time group.
+    summary["solar_difference_mwh"] = (
+        summary["average_solar_negative_mwh"]
+        - summary["average_solar_nonnegative_mwh"]
+    )
+
+    # Percentage difference relative to the nonnegative-price mean.
+    # Do not calculate it when the baseline is zero.
+    baseline = summary["average_solar_nonnegative_mwh"].where(
+        summary["average_solar_nonnegative_mwh"] != 0
+    )
+
+    summary["solar_difference_pct"] = (
+        summary["solar_difference_mwh"] / baseline * 100
+    )
+
+    return summary.sort_values(
+        ["year", "month", "hour"]
+    ).reset_index(drop=True)
+
+
 def analyze_seasons(data: pd.DataFrame) -> pd.DataFrame:
-    """
-    Summarize prices and solar generation by season and price category.
-    """
+    """Summarize prices and solar generation by season and price category."""
     summary = (
         data.groupby(
             ["year", "season", "price_category"],
@@ -175,7 +255,7 @@ def analyze_seasons(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def print_hourly_frequency(summary: pd.DataFrame) -> None:
-    """Print the hourly negative-price results in a readable format."""
+    """Print negative-price frequency results."""
     print("\nNEGATIVE-PRICE FREQUENCY BY GERMAN LOCAL HOUR")
     print("Rate = negative-price hours / observed hours")
 
@@ -187,8 +267,8 @@ def print_hourly_frequency(summary: pd.DataFrame) -> None:
     )
 
     print(display.to_string(index=False))
-
     print("\nHighest negative-price rates by year:")
+
     for year in sorted(summary["year"].unique()):
         year_data = summary[summary["year"] == year]
         highest = year_data.loc[
@@ -196,7 +276,7 @@ def print_hourly_frequency(summary: pd.DataFrame) -> None:
         ]
 
         print(
-            f"{year}: {int(highest['hour']):02d}:00 — "
+            f"{year}: {int(highest['hour']):02d}:00 - "
             f"{highest['negative_price_rate_pct']:.2f}% "
             f"({int(highest['negative_price_hours'])} negative-price "
             f"hours out of {int(highest['observed_hours'])} observed)"
@@ -222,6 +302,57 @@ def print_seasonal_summary(summary: pd.DataFrame) -> None:
     print(display.to_string(index=False))
 
 
+def print_month_hour_summary(summary: pd.DataFrame) -> None:
+    """Print a compact overview of the within-period comparison."""
+    print("\nSOLAR COMPARISON WITHIN THE SAME MONTH AND LOCAL HOUR")
+
+    comparable = summary.dropna(
+        subset=[
+            "average_solar_negative_mwh",
+            "average_solar_nonnegative_mwh",
+        ]
+    )
+
+    print(f"Total year-month-hour groups: {len(summary):,}")
+    print(f"Groups with both price categories: {len(comparable):,}")
+    print(
+        "Groups without both categories: "
+        f"{len(summary) - len(comparable):,}"
+    )
+
+    if comparable.empty:
+        print("No groups contain both price categories.")
+        return
+
+    columns_to_display = [
+        "year",
+        "month",
+        "hour",
+        "negative_price_hours",
+        "nonnegative_price_hours",
+        "average_solar_negative_mwh",
+        "average_solar_nonnegative_mwh",
+        "solar_std_negative_mwh",
+        "solar_std_nonnegative_mwh",
+        "solar_difference_mwh",
+        "solar_difference_pct",
+    ]
+
+    print("\nFirst 10 comparable groups:")
+    print(
+        comparable[columns_to_display]
+        .head(10)
+        .round(2)
+        .to_string(index=False)
+    )
+
+    print(
+        "\nInterpretation note: These are within-group associations, "
+        "not proof of causation. Standard deviations describe variation "
+        "within each category; they are not confidence intervals."
+    )
+
+
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -229,8 +360,10 @@ def main() -> None:
 
     hourly_frequency = analyze_hourly_frequency(data)
     solar_by_hour = analyze_solar_by_hour(data)
+    month_hour_solar = analyze_solar_by_month_hour(data)
     seasonal_summary = analyze_seasons(data)
 
+    # Preserve all existing output filenames.
     outputs = {
         "hourly_negative_price_frequency_2024_2025.csv":
             hourly_frequency,
@@ -238,6 +371,8 @@ def main() -> None:
             solar_by_hour,
         "seasonal_price_and_solar_summary_2024_2025.csv":
             seasonal_summary,
+        "month_hour_solar_price_comparison_2024_2025.csv":
+            month_hour_solar,
     }
 
     for filename, result in outputs.items():
@@ -247,6 +382,7 @@ def main() -> None:
 
     print_hourly_frequency(hourly_frequency)
     print_seasonal_summary(seasonal_summary)
+    print_month_hour_summary(month_hour_solar)
 
     print("\nAnalysis completed successfully.")
 

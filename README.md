@@ -94,6 +94,23 @@ The difference was approximately 12,270 MWh, or 53%.
 
 Some overnight hour-of-day comparisons contain relatively few negative-price observations. Those comparisons should be interpreted cautiously, especially where fewer than 30 negative-price observations are available.
 
+### 7. The month-hour comparison showed a daytime association
+
+A further analysis compared solar generation during negative-price and nonnegative-price observations for individual year-month-hour groups.
+
+For this comparison, a group was included in the selected analysis only when it contained at least five negative-price observations. This is a practical minimum-observation threshold, not a statistical significance test.
+
+Among the qualifying groups:
+
+- The most consistent pattern appeared during daytime hours, particularly 11:00–15:00 German local time.
+- At 13:00, 11 of 12 qualifying month-hour groups had higher average solar generation during negative-price observations.
+- The 13:00 result represents 91.7% of the qualifying groups, not 91.7% of all negative-price hours.
+- August 2025 was an exception at 13:00, with average solar generation lower during negative-price observations.
+
+The pattern is descriptive. The number of qualifying groups differs by hour, and the comparison does not control for demand, wind generation, conventional generation, storage, or cross-border electricity flows.
+
+For additional results, supporting tables, and analytical interpretation, see [the detailed findings](docs/findings.md).
+
 ## Visualizations
 
 The following charts summarize the main analytical findings.
@@ -121,6 +138,16 @@ Compares average solar generation across months and price categories. Values rep
 ![Hourly negative-price frequency and solar generation by price category, 2024–2025](docs/hour_of_day_analysis_2024_2025.png)
 
 Shows negative-price frequency by German local hour and compares average solar generation during negative-price and nonnegative-price hours.
+
+### Hourly solar-generation comparison during negative-price observations
+
+![Hourly solar generation comparison during negative-price and nonnegative-price observations](docs/solar_negative_price_hourly_pattern_2024_2025.png)
+
+Compares average solar generation across German local hours and shows the hourly pattern in the difference between negative-price and nonnegative-price observations.
+
+The associated month-hour comparison is available at:
+
+`docs/month_hour_solar_price_comparison_2024_2025.csv`
 
 For additional results, supporting tables, and analytical interpretation, see [the detailed findings](docs/findings.md).
 
@@ -164,7 +191,9 @@ The current dataset has the following characteristics:
 - **Daylight saving:** Local months and individual local hours can contain different numbers of observations.
 - **Negative-price frequency:** Calculated using observed hourly records as the denominator.
 - **Unavailable comparisons:** Months without negative-price hours cannot support comparisons between negative-price and nonnegative-price hours.
-- **Small sample sizes:** Some hour-of-day comparisons contain relatively few negative-price observations.
+- **Small sample sizes:** Some hour-of-day and month-hour comparisons contain relatively few negative-price observations.
+- **Month-hour inclusion threshold:** The selected month-hour analysis requires at least five negative-price observations per group. This is a practical filter, not a statistical significance test.
+- **Group-level percentages:** The share of qualifying month-hour groups with higher solar generation is not the share of all negative-price observations.
 - **Causality and significance:** The analysis is descriptive and does not establish causal relationships or demonstrate statistical significance.
 - **Source definitions:** Generation values follow the downloaded source data. Units, definitions, and any estimates should be verified before publication or commercial interpretation.
 
@@ -202,17 +231,21 @@ The workflow runs locally using downloaded SMARD data and Python.
 ```text
 GridSignal_AI/
 ├── data/
-│   ├── raw/                              # Original source files (local)
-│   └── processed/                        # Generated datasets (local)
+│   ├── raw/                                # Original source files (local)
+│   └── processed/                            # Generated datasets (local)
 ├── docs/
 │   ├── findings.md
+│   ├── PROJECT_MEMORY_GridSignal_AI.md
+│   ├── SESSION_UPDATE_TEMPLATE_GridSignal_AI.md
 │   ├── negative_price_frequency_2024_2025.png
 │   ├── negative_price_severity_2024_2025.png
 │   ├── monthly_solar_comparison_2024_2025.png
 │   ├── hour_of_day_analysis_2024_2025.png
+│   ├── solar_negative_price_hourly_pattern_2024_2025.png
 │   ├── monthly_solar_consistency_2024_2025.csv
 │   ├── hourly_negative_price_frequency_2024_2025.csv
 │   ├── hourly_solar_by_price_category_2024_2025.csv
+│   ├── month_hour_solar_price_comparison_2024_2025.csv
 │   └── seasonal_price_and_solar_summary_2024_2025.csv
 ├── src/
 │   └── gridsignal/
@@ -229,7 +262,8 @@ GridSignal_AI/
 │       ├── plot_negative_price_frequency.py
 │       ├── plot_negative_price_severity.py
 │       ├── plot_monthly_solar_comparison.py
-│       └── plot_hour_of_day_analysis.py
+│       ├── plot_hour_of_day_analysis.py
+│       └── plot_solar_negative_price_hourly.py
 ├── tests/
 │   └── test_data_pipeline.py
 ├── .gitignore
@@ -305,6 +339,7 @@ python -m gridsignal.analyze_hour_of_day
 python -m gridsignal.plot_negative_price_severity
 python -m gridsignal.plot_monthly_solar_comparison
 python -m gridsignal.plot_hour_of_day_analysis
+python -m gridsignal.plot_solar_negative_price_hourly
 ```
 
 The scripts generate processed datasets under `data/processed/`, analytical summaries under `docs/`, and visualizations under `docs/`.

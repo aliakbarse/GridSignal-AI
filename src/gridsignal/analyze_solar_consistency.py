@@ -1,11 +1,22 @@
-
 from pathlib import Path
 
 import pandas as pd
 
 
-INPUT_FILE = Path("data/processed/germany_market_combined_2024_2025.csv")
-OUTPUT_FILE = Path("docs/monthly_solar_consistency_2024_2025.csv")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+INPUT_FILE = (
+    PROJECT_ROOT
+    / "data"
+    / "processed"
+    / "germany_market_combined_2024_2025.csv"
+)
+
+OUTPUT_FILE = (
+    PROJECT_ROOT
+    / "docs"
+    / "monthly_solar_consistency_2024_2025.csv"
+)
 
 MIN_NEGATIVE_HOURS = 30
 
@@ -163,10 +174,14 @@ def print_robustness_summary(results: pd.DataFrame) -> None:
 
     print(f"\nEligible year-months: {eligible_count}")
     print(f"Positive monthly differences: {positive_count}")
-    print(f"Zero or negative monthly differences: "
-          f"{eligible_count - positive_count}")
-    print(f"Share with higher solar generation: "
-          f"{positive_count / eligible_count:.1%}")
+    print(
+        f"Zero or negative monthly differences: "
+        f"{eligible_count - positive_count}"
+    )
+    print(
+        f"Share with higher solar generation: "
+        f"{positive_count / eligible_count:.1%}"
+    )
 
     print("\nMONTHLY DIFFERENCE DISTRIBUTION")
     print(f"Mean difference: {differences.mean():,.1f} MWh")
@@ -195,8 +210,14 @@ def print_robustness_summary(results: pd.DataFrame) -> None:
         highest_mean = max(leave_one_out_means)
 
         print("\nLEAVE-ONE-MONTH-OUT SENSITIVITY")
-        print(f"Lowest mean after excluding one month: {lowest_mean:,.1f} MWh")
-        print(f"Highest mean after excluding one month: {highest_mean:,.1f} MWh")
+        print(
+            f"Lowest mean after excluding one month: "
+            f"{lowest_mean:,.1f} MWh"
+        )
+        print(
+            f"Highest mean after excluding one month: "
+            f"{highest_mean:,.1f} MWh"
+        )
 
         if lowest_mean > 0:
             print(
